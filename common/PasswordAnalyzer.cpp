@@ -2,7 +2,28 @@
 // Created by Abdoulaye Sedego on 10/6/25.
 //
 
-#include "PasswordAnalyzer.h"
+#include "PasswordAnalyzer.h"  // Your header (declarations)
+#include <iostream>            // For std::cout, std::cin, std::cerr, std::endl
+#include <fstream>             // For std::ifstream, std::getline
+#include <random>              // For std::random_device, std::mt19937, std::uniform_int_distribution
+#include <algorithm>           // For std::shuffle
+#include <cctype>              // For std::isupper, std::islower, std::isdigit, std::ispunct
+#include <cmath>               // For std::log2
+#include <unordered_set>       // For std::unordered_set (weakPasswords)
+
+// Cross-platform headers for getMaskedInput()
+#if defined(_WIN32) || defined(_WIN64)
+  #include <conio.h>           // _getch on Windows
+  #include <io.h>              // _isatty, _fileno
+  #define isatty _isatty
+  #define fileno _fileno
+#else
+  #include <unistd.h>          // isatty, read, STDIN_FILENO on macOS/Linux
+  #include <termios.h>         // tcgetattr, tcsetattr, ECHO, ICANON, VMIN, VTIME
+  #include <errno.h>           // errno for errors
+#endif
+
+std::unordered_set<std::string> weakPasswords;  // Global definition (loaded in callers)
 
 
 // Cross-platform masked input that attempts to show '*' in real-time.

@@ -1,14 +1,24 @@
 add_executable(gui
-        main.cpp
+        main.cpp          # Explicitly include—must be first for entry point
         mainwindow.cpp
-        mainwindow.ui  # Auto-moc for .ui
+        mainwindow.ui     # Qt auto-processes .ui for moc/uic
 )
+
 target_link_libraries(gui
-        Qt6::Core
-        Qt6::Widgets
-        common  # Shared analyzer
+        PRIVATE Qt6::Core
+        PRIVATE Qt6::Widgets
+        PRIVATE common     # Your shared lib
 )
+
+# macOS bundle for app-like executable (no console)
 set_target_properties(gui PROPERTIES
-        WIN32_EXECUTABLE TRUE  # No console on Win
         MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.yourname.PasswordAnalyzerGUI"
 )
+
+# Optional: Suppress console on run (for clean GUI)
+if(APPLE)
+    set_target_properties(gui PROPERTIES
+            OUTPUT_NAME "PasswordAnalyzerGUI"
+    )
+endif()

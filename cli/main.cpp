@@ -1,29 +1,22 @@
 #include <iostream>
-#include <string>
-#include <cctype>    // For isupper (character classification functions)
-#include <fstream>   // For dict (file input streams to load common passwords)
-#include <random>    // For generator (secure random number generation)
-#include <algorithm> // For shuffle (std::shuffle to randomize password chars)
-#include <cmath>     // For entropy calc (std::log2 for approximate entropy)
-#include "../common/PasswordAnalyzer.h"
+#include <fstream>   // For dict loading
+#include "../common/PasswordAnalyzer.h"  // All declarations (getMaskedInput, analyzePassword, generatePassword)
 
-#if defined(_WIN32) || defined(_WIN64)
-  #include <conio.h>    // _getch on Windows
-  #include <io.h>
-  #define isatty _isatty
-  #define fileno _fileno
-#else
-  #include <unistd.h>   // isatty, read, STDIN_FILENO
-  #include <termios.h>  // tcgetattr, tcsetattr
-  #include <errno.h>
-#endif
-
-
-std::string getMaskedInput(); // Securely reads masked password from a user
-int analyzePassword(const std::string& password); // Computes strength score 0-100
-std::string generatePassword(int length = 16); // Generates random strong password
 
 int main() {
+    // Load dict once for efficiency (O(1) lookups)
+    std::ifstream dict("../common_passwords.txt");
+    if (dict.is_open()) {
+        std::string badPass;
+        while (std::getline(dict, badPass)) {
+            weakPasswords.insert(badPass);
+        }
+        dict.close();
+        std::cout << "Dict loaded: " << weakPasswords.size() << " entries." << std::endl;
+    } else {
+        std::cout << "Warning: Dict file missing—no weak word check." << std::endl;
+    }
+
     while (true) {
         // Menu display: Simple text-based UI; in full apps, could use libraries like argparse for CLI polish.
         std::cout << "\n=== Password Strength Analyzer CLI ===" << std::endl;

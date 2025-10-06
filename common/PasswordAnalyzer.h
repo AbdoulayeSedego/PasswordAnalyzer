@@ -1,13 +1,17 @@
-//
-// Created by Abdoulaye Sedego on 10/6/25.
-//
+#ifndef PASSWORD_ANALYZER_H
+#define PASSWORD_ANALYZER_H
 
-#ifndef PASSWORDANALYZER_PASSWORDANALYZER_H
-#define PASSWORDANALYZER_PASSWORDANALYZER_H
+#include <string>
+#include <unordered_set>  // For dict caching
 
+// Global cache (loaded in callers)
+extern std::unordered_set<std::string> weakPasswords;
 
-class PasswordAnalyzer {
-};
+/**
+ * Core functions: Reusable for CLI (console output) and GUI (QString output).
+ */
+std::string getMaskedInput();  // CLI-only; returns std::string
+int analyzePassword(const std::string& password);  // Returns score
+std::string generatePassword(int length = 16);     // Returns std::string (fix here!)
 
-
-#endif //PASSWORDANALYZER_PASSWORDANALYZER_H
+#endif // PASSWORD_ANALYZER_H

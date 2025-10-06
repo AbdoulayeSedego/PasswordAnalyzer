@@ -49,3 +49,18 @@ int main() {
     //END Of Main
     return 0;
 }
+std::string getMaskedInput() {
+    std::string password;
+    std::cout << "Enter password: (hidden for security)";
+    char ch;
+    password.clear(); // Sanitize start—no leftovers from prev inputs
+    while ( (ch = std::cin.get()) != '\n') {  // Loop until Enter a key
+        if (ch != '\r') {
+            password += ch; // Build string char-by-char
+            std::cout << '*';  // Mask for security (shoulder-surfing defense)
+        }
+    }
+    std::cout << std::endl;
+    return password;
+}
+

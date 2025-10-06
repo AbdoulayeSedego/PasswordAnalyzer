@@ -6,6 +6,18 @@
 #include <algorithm> // For shuffle (std::shuffle to randomize password chars)
 #include <cmath>     // For entropy calc (std::log2 for approximate entropy)
 
+#if defined(_WIN32) || defined(_WIN64)
+  #include <conio.h>    // _getch on Windows
+  #include <io.h>
+  #define isatty _isatty
+  #define fileno _fileno
+#else
+  #include <unistd.h>   // isatty, read, STDIN_FILENO
+  #include <termios.h>  // tcgetattr, tcsetattr
+  #include <errno.h>
+#endif
+
+
 std::string getMaskedInput(); // Securely reads masked password from a user
 int analyzePassword(const std::string& password); // Computes strength score 0-100
 std::string generatePassword(int length = 16); // Generates random strong password
@@ -49,19 +61,118 @@ int main() {
     //END Of Main
     return 0;
 }
+// Cross-platform masked input that attempts to show '*' in real-time.
+// Falls back gracefully if stdin is not a TTY or termios calls fail.
 std::string getMaskedInput() {
     std::string password;
-    std::cout << "Enter password: (hidden for security)";
-    char ch;
-    password.clear(); // Sanitize start—no leftovers from prev inputs
-    while ( (ch = std::cin.get()) != '\n') {  // Loop until Enter a key
-        if (ch != '\r') {
-            password += ch; // Build string char-by-char
-            std::cout << '*';  // Mask for security (shoulder-surfing defense)
-        }
+    std::cout << "Enter password: " << std::flush;
+
+#if defined(_WIN32) || defined(_WIN64)
+    // --- Windows implementation (uses _getch for immediate, non-echoed input) ---
+    if (!isatty(fileno(stdin))) {
+        // Not a TTY (rare on Windows), fallback to getline + post-mask
+        std::string tmp;
+        if (!std::getline(std::cin, tmp)) return "";
+        std::cout << std::string(tmp.size(), '*') << std::endl;
+        return tmp;
     }
-    std::cout << std::endl;
+
+    while (true) {
+        int ch = _getch();               // read key without echo
+        if (ch == '\r' || ch == '\n') {  // Enter
+            std::cout << std::endl;
+            break;
+        }
+        if (ch == 0 || ch == 224) {      // function/arrow keys (two-char codes)
+            // consume next byte and ignore the key
+            _getch();
+            continue;
+        }
+        if (ch == 8) { // Backspace
+            if (!password.empty()) {
+                password.pop_back();
+                std::cout << "\b \b" << std::flush; // remove '*' visually
+            }
+            continue;
+        }
+        // Normal character
+        password.push_back(static_cast<char>(ch));
+        std::cout << '*' << std::flush;
+    }
+
     return password;
+
+#else
+    // --- POSIX implementation (macOS / Linux) ---
+    // Check that stdin is a terminal (TTY). If not, termios won't help.
+    if (!isatty(STDIN_FILENO)) {
+        // fallback: read normally then print stars (not real-time)
+        std::string tmp;
+        if (!std::getline(std::cin, tmp)) return "";
+        std::cout << std::string(tmp.size(), '*') << std::endl;
+        return tmp;
+    }
+
+    struct termios oldt;
+    if (tcgetattr(STDIN_FILENO, &oldt) != 0) {
+        // If we can't get attributes, fallback with a warning:
+        std::cerr << "\nWarning: Unable to disable terminal echo (tcgetattr failed). "
+                     "Masking will occur only after you press Enter.\n";
+        std::string tmp;
+        if (!std::getline(std::cin, tmp)) return "";
+        std::cout << std::string(tmp.size(), '*') << std::endl;
+        return tmp;
+    }
+
+    // Make a copy and modify local flags: disable ECHO and canonical mode (ICANON)
+    struct termios newt = oldt;
+    newt.c_lflag &= ~(ECHO | ICANON); // Turn off echoing and enable non-canonical (char-by-char) mode
+    newt.c_cc[VMIN] = 1;              // Minimum number of characters to read
+    newt.c_cc[VTIME] = 0;             // No read timeout
+
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &newt) != 0) {
+        // Failed to set terminal options — restore and fallback
+        std::cerr << "\nWarning: Unable to set terminal to raw mode (tcsetattr failed). "
+                     "Masking will occur only after you press Enter.\n";
+        // best-effort: restore original (though we didn't change it)
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+        std::string tmp;
+        if (!std::getline(std::cin, tmp)) return "";
+        std::cout << std::string(tmp.size(), '*') << std::endl;
+        return tmp;
+    }
+
+    // terminal is in char-by-char, non-echo mode. Read characters using read().
+    char ch = 0;
+    while (true) {
+        ssize_t n = read(STDIN_FILENO, &ch, 1);
+        if (n <= 0) {
+            // read error or EOF: restore terminal and return what we have
+            tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+            return password;
+        }
+        if (ch == '\n' || ch == '\r') {
+            // Enter pressed: done
+            std::cout << std::endl;
+            break;
+        }
+        if (ch == 127 || ch == '\b') { // Backspace (127 or '\b')
+            if (!password.empty()) {
+                password.pop_back();
+                // Erase last '*' visually: backspace, overwrite with space, backspace again
+                std::cout << "\b \b" << std::flush;
+            }
+            continue;
+        }
+        // Normal printable character: append and print '*'
+        password.push_back(ch);
+        std::cout << '*' << std::flush;
+    }
+
+    // Restore the original terminal settings unconditionally
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    return password;
+#endif
 }
 
 // Analysis function: Core logic—reusable across CLI/GUI.
@@ -146,8 +257,8 @@ int analyzePassword(const std::string& password) {
         std::cout << "Weak: Matches known leaked password—change now!" << std::endl;
     }
 
-    int types = (hasUpper + hasLower + hasDigit, hasSpecial);
-    double entropy = std::log2(password.length()) * types;
+    int types = (hasUpper ? 1 : 0) + (hasLower ? 1 : 0) + (hasDigit ? 1 : 0) + (hasSpecial ? 1 : 0);
+    double entropy = (password.empty() ? 0.0 : std::log2(static_cast<double>(password.length()))) * types;
     if (entropy > 50) {
         score += 10;
         std::cout << "Bonus: High entropy (>50 bits—crack-resistant)" << std::endl;
@@ -157,5 +268,24 @@ int analyzePassword(const std::string& password) {
     return score;
 }
 std::string generatePassword(int length) {
+    // Secure seeding: std::random_device pulls from /dev/urandom (Linux) or CryptoAPI (Win).
+    // Why? Predictable seeds = guessable outputs; critical for key gen in crypto.
+    std::random_device rd; // seed from os
+    std::mt19937 gen(rd()); // std::mt19937 is Mersenne Twister 19937 : Fast, high-quality PRNG
 
+    // Charset: Balanced pools for forced diversity (avoids all-lowercase gens).
+    // Size 94: Full printable ASCII minus space—standard for pass gens.
+    std::string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+    std::uniform_int_distribution<> dist(0, chars.size() - 1); //// Uniform pick from charset 0-94
+
+    std::string generated;
+    generated.reserve(length); // Preallocate memory for performance
+    for (int i = 0; i < length; i++) {
+        generated += chars[dist(gen)]; // Append random char
+    }
+
+    // Shuffle: Ensures no patterns (e.g., symbols at end). Uses Fisher-Yates via std::shuffle.
+    // In cyber: Patterns aid cracking (e.g., ML models spot 'word+digit').
+    std::shuffle(generated.begin(), generated.end(), gen);
+    return generated;
 }

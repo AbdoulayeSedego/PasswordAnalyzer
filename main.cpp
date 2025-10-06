@@ -156,47 +156,6 @@ int analyzePassword(const std::string& password) {
     std::cout << "Final Score: " << score << "/100" << std::endl;
     return score;
 }
+std::string generatePassword(int length) {
 
-// // Generates a random strong password of the requested length.
-// // Ensures at least one character from each class (upper, lower, digit, special)
-// // when length >= 4, then fills the rest randomly and shuffles for unpredictability.
-// std::string generatePassword(int length) {
-//     if (length < 4) {
-//         // Minimal safeguard: even short requests get some variety.
-//         length = std::max(4, length);
-//     }
-//
-//     const std::string UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-//     const std::string LOWER = "abcdefghijklmnopqrstuvwxyz";
-//     const std::string DIGITS = "0123456789";
-//     const std::string SPECIAL = "!@#$%^&*()-_=+[]{};:,.<>/?";
-//
-//     const std::string ALL = UPPER + LOWER + DIGITS + SPECIAL;
-//
-//     std::random_device rd;
-//     std::mt19937 gen(rd());
-//     std::uniform_int_distribution<size_t> pickUpper(0, UPPER.size() - 1);
-//     std::uniform_int_distribution<size_t> pickLower(0, LOWER.size() - 1);
-//     std::uniform_int_distribution<size_t> pickDigit(0, DIGITS.size() - 1);
-//     std::uniform_int_distribution<size_t> pickSpecial(0, SPECIAL.size() - 1);
-//     std::uniform_int_distribution<size_t> pickAll(0, ALL.size() - 1);
-//
-//     std::string pwd;
-//     pwd.reserve(static_cast<size_t>(length));
-//
-//     // Guarantee at least one of each class
-//     pwd.push_back(UPPER[pickUpper(gen)]);
-//     pwd.push_back(LOWER[pickLower(gen)]);
-//     pwd.push_back(DIGITS[pickDigit(gen)]);
-//     pwd.push_back(SPECIAL[pickSpecial(gen)]);
-//
-//     // Fill remaining characters
-//     for (int i = 4; i < length; ++i) {
-//         pwd.push_back(ALL[pickAll(gen)]);
-//     }
-//
-//     // Shuffle to avoid predictable class positions
-//     std::shuffle(pwd.begin(), pwd.end(), gen);
-//
-//     return pwd;
-//}
+}

@@ -1,0 +1,9 @@
+# .gitignore content example:
+build/
+CMakeFiles/
+CMakeCache.txt
+*.o
+*.exe
+*.pro.user
+*.autosave
+common_passwords.txt  # Don't commit sensitive dict—add sample

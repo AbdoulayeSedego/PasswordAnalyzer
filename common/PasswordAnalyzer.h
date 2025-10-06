@@ -1,0 +1,13 @@
+//
+// Created by Abdoulaye Sedego on 10/6/25.
+//
+
+#ifndef PASSWORDANALYZER_PASSWORDANALYZER_H
+#define PASSWORDANALYZER_PASSWORDANALYZER_H
+
+
+class PasswordAnalyzer {
+};
+
+
+#endif //PASSWORDANALYZER_PASSWORDANALYZER_H

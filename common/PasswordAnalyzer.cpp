@@ -2,8 +2,8 @@
 // Created by Abdoulaye Sedego on 10/6/25.
 //
 
-#include "PasswordAnalyzer.h"  // Your header (declarations)
-#include <iostream>            // For std::cout, std::cin, std::cerr, std::endl
+#include "PasswordAnalyzer.h"  
+#include <iostream>            
 #include <fstream>             // For std::ifstream, std::getline
 #include <random>              // For std::random_device, std::mt19937, std::uniform_int_distribution
 #include <algorithm>           // For std::shuffle
@@ -99,7 +99,7 @@ std::string getMaskedInput() {
         // Failed to set terminal options — restore and fallback
         std::cerr << "\nWarning: Unable to set terminal to raw mode (tcsetattr failed). "
                      "Masking will occur only after you press Enter.\n";
-        // best-effort: restore original (though we didn't change it)
+        //restore original (though we didn't change it)
         tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
         std::string tmp;
         if (!std::getline(std::cin, tmp)) return "";
@@ -197,8 +197,8 @@ int analyzePassword(const std::string& password) {
     }
 
     // Dictionary check: Loads common weak passes; exact match penalty.
-    // Why? 80% breaches from weak creds; tools like John the Ripper use rockyou.txt (14M entries).
-    // Here: Simple file load—scalable to trie/hashtable for speed in large dicts.
+    // 80% breaches from weak creds; tools like John the Ripper use rockyou.txt (14M entries).
+    // Simple file load—scalable to trie/hashtable for speed in large dicts.
     std::ifstream dict("common_passwords.txt");
     std::string badPass;
     bool isWeak = false;
@@ -234,7 +234,7 @@ int analyzePassword(const std::string& password) {
 }
 std::string generatePassword(int length) {
     // Secure seeding: std::random_device pulls from /dev/urandom (Linux) or CryptoAPI (Win).
-    // Why? Predictable seeds = guessable outputs; critical for key gen in crypto.
+    // Predictable seeds = guessable outputs; critical for key gen in crypto.
     std::random_device rd; // seed from os
     std::mt19937 gen(rd()); // std::mt19937 is Mersenne Twister 19937 : Fast, high-quality PRNG
 

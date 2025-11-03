@@ -2,7 +2,8 @@
 #include "ui_mainwindow.h"                 // Generated from mainwindow.ui (auto via AUTOUIC)
 #include <QDebug>                          // For debug output
 #include <fstream>                         // For dict loading
-#include <unordered_set>                   // For weakPasswords (shared)
+#include <unordered_set>
+#include <QMessageBox>
 #include "../common/PasswordAnalyzer.h"    // Shared core (generatePassword, etc.)
 
 // External global from common
@@ -32,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Test shared func (remove after Step 1)
     qDebug() << "GUI ready—shared gen example:" << generatePassword(16).c_str();
+    connect(ui->analyzeButton, &QPushButton::clicked, this, &MainWindow::onAnalyzeButtonClicked);
 }
 
 MainWindow::~MainWindow()
@@ -39,14 +41,34 @@ MainWindow::~MainWindow()
     delete ui;  // Safe now—full type defined
 }
 
+// Slot: Connected to analyzeButton clicked signal
 void MainWindow::onAnalyzeButtonClicked()
 {
-    qDebug() << "Analyze clicked (TBD—calls analyzePassword)";
-    // Step 3: Get text from QLineEdit, call analyzePassword, display in QLabel
+    qDebug() << "Analyze clicked (calls analyzePassword)";
+    QString input = ui->passwordLineEdit->text();
+    if (input.isEmpty()) {
+        ui->scoreLabel->setText("Enter a password first!");
+        QMessageBox::warning(this, "Input Error", "Please enter a password.");  // Popup alert
+        return;
+    }
+
+    std::string password = input.toStdString();
+    int score = analyzePassword(password);  // Console output
+
+    ui->scoreLabel->setText(QString("Score: %1/100").arg(score));
+    if (score < 50) {
+        ui->scoreLabel->setStyleSheet("color: red; font-weight: bold;");
+        QMessageBox::warning(this, "Weak Password", "Vulnerable—use generator!");  // Alert
+    } else if (score < 80) {
+        ui->scoreLabel->setStyleSheet("color: orange;");
+    } else {
+        ui->scoreLabel->setStyleSheet("color: green; font-weight: bold;");
+        QMessageBox::information(this, "Strong Password", "Resists cracking!");  // Alert
+    }
 }
 
 void MainWindow::onGenerateButtonClicked()
 {
     qDebug() << "Generate clicked (TBD—calls generatePassword)";
-    // Step 3: Call generate, set to QLineEdit or QLabel
+    // Step 3: Call generate, set to QLineEdit or QLabel TODO
 }

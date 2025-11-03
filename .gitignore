@@ -7,3 +7,4 @@ CMakeCache.txt
 *.pro.user
 *.autosave
 common_passwords.txt  # Don't commit sensitive dict—add sample
+password_cli  # Compiled CLI executable
